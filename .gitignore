@@ -3,3 +3,5 @@ data/snapshots
 analyze.py
 client.py
 node_modules
+endpoints.md
+frontend/dist

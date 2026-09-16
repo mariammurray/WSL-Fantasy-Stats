@@ -9,6 +9,7 @@ const activeView = ref('all')
 const weeklyPointsByPlayer = ref(new Map())
 const snapshotBatches = ref(new Map())
 const selectedMatchday = ref(2)
+const snapshots = ref([])
 
 const leagueNames = {
   'wpll::Football_Competition::e32284e8a1214f1ca83a3245d690b336': 'WSL',
@@ -46,14 +47,7 @@ const teamLogoUrl = (player) => mediaUrl(
   ?? `clubLogos/${player.teamId.replace('wpll::Football_Team::', '')}.webp`,
 )
 
-const snapshots = [
-  localAssetUrl('data/matchday_1.json'),
-  localAssetUrl('data/matchday_2.json'),
-]
-
-const matchdays = snapshots
-  .map((path) => Number(path.match(/matchday_(\d+)/)?.[1]))
-  .filter(Boolean)
+const matchdays = computed(() => snapshots.value.map((snapshot) => snapshot.matchday))
 
 const showMatchday = (matchday) => {
   const current = snapshotBatches.value.get(matchday) ?? []
@@ -79,14 +73,17 @@ const showMatchday = (matchday) => {
 
 const loadSnapshots = async () => {
   try {
-    const responses = await Promise.all(snapshots.map((path) => fetch(path)))
+    const manifestResponse = await fetch(localAssetUrl('data/snapshots.json'))
+    if (!manifestResponse.ok) throw new Error('Snapshot manifest could not be loaded.')
+    snapshots.value = await manifestResponse.json()
+    const responses = await Promise.all(snapshots.value.map(({ path }) => fetch(localAssetUrl(`data/${path}`))))
     if (responses.some((response) => !response.ok)) {
       throw new Error('Snapshot data could not be loaded.')
     }
 
     const batches = await Promise.all(responses.map((response) => response.json()))
-    snapshotBatches.value = new Map(matchdays.map((matchday, index) => [matchday, batches[index]]))
-    showMatchday(Math.max(...matchdays))
+    snapshotBatches.value = new Map(matchdays.value.map((matchday, index) => [matchday, batches[index]]))
+    showMatchday(Math.max(...matchdays.value))
   } catch (loadError) {
     error.value = loadError.message
   } finally {
@@ -119,13 +116,13 @@ const normalisedPlayers = computed(() => players.value.map((player) => ({
 
 const matchweek = computed(() => selectedMatchday.value)
 
-const latestMatchday = computed(() => Math.max(...matchdays))
+const latestMatchday = computed(() => Math.max(...matchdays.value))
 const previousMatchday = () => {
-  const previous = matchdays.filter((matchday) => matchday < selectedMatchday.value).pop()
+  const previous = matchdays.value.filter((matchday) => matchday < selectedMatchday.value).pop()
   if (previous) showMatchday(previous)
 }
 const nextMatchday = () => {
-  const next = matchdays.find((matchday) => matchday > selectedMatchday.value)
+  const next = matchdays.value.find((matchday) => matchday > selectedMatchday.value)
   if (next) showMatchday(next)
 }
 

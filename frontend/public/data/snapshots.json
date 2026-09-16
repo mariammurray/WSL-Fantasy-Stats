@@ -1,0 +1,10 @@
+[
+  {
+    "matchday": 1,
+    "path": "matchday_1.json"
+  },
+  {
+    "matchday": 2,
+    "path": "matchday_2.json"
+  }
+]

@@ -34,7 +34,13 @@ def get_json(path: str, params: dict | None = None) -> dict:
 
 
 def get_tour_details() -> dict:
-    return get_json(f'/feeds/tour/details/{TOUR_ID}.json')['Data']['Value']
+    payload = get_json(f'/feeds/home/widgets/{TOUR_ID}.json', params={'v': 2})
+    details = payload.get('Data', {}).get('Value', {})
+    if 'currMdId' not in details or 'deadlineDate' not in details:
+        raise RuntimeError(
+            'The WSL widgets feed did not include currMdId and deadlineDate.'
+        )
+    return details
 
 
 def get_played_matchdays() -> list[dict]:
@@ -70,6 +76,17 @@ def save_snapshot(matchday_id: int, label: str, players: list[dict]) -> Path:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     path = DATA_DIR / f'matchday_{matchday_id}_{label}.json'
     path.write_text(json.dumps(players, indent=2))
+    canonical_path = DATA_DIR / f'matchday_{matchday_id}.json'
+    canonical_path.write_text(json.dumps(players, indent=2))
+    snapshots = sorted(
+        (
+            {'matchday': int(snapshot.stem.split('_')[1]), 'path': snapshot.name}
+            for snapshot in DATA_DIR.glob('matchday_[0-9]*.json')
+            if len(snapshot.stem.split('_')) == 2
+        ),
+        key=lambda snapshot: snapshot['matchday'],
+    )
+    (DATA_DIR / 'snapshots.json').write_text(json.dumps(snapshots, indent=2))
     print(f'Saved {len(players)} players -> {path}')
     return path
 
