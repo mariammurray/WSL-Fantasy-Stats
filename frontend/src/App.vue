@@ -16,6 +16,7 @@ const leagueNames = {
 }
 
 const mediaBaseUrl = 'https://media-sdp.wslfootball.com/'
+const localAssetUrl = (path) => `${import.meta.env.BASE_URL}${path}`
 
 const mediaUrl = (path) => path ? `${mediaBaseUrl}${path}` : ''
 
@@ -36,7 +37,7 @@ const handlePlayerImageError = (event, player) => {
     return
   }
 
-  event.target.src = '/user-solid-full.svg'
+  event.target.src = localAssetUrl('user-solid-full.svg')
   event.target.alt = 'Default player profile icon'
 }
 
@@ -46,8 +47,8 @@ const teamLogoUrl = (player) => mediaUrl(
 )
 
 const snapshots = [
-  '/data/matchday_1.json',
-  '/data/matchday_2.json',
+  localAssetUrl('data/matchday_1.json'),
+  localAssetUrl('data/matchday_2.json'),
 ]
 
 const matchdays = snapshots
@@ -112,7 +113,7 @@ const normalisedPlayers = computed(() => players.value.map((player) => ({
   form: player.form,
   league: player.league ?? leagueNames[player.competitionId] ?? 'Unknown',
   imageUrls: playerImageUrls(player),
-  imageUrl: playerImageUrls(player)[0] ?? '/user-solid-full.svg',
+  imageUrl: playerImageUrls(player)[0] ?? localAssetUrl('user-solid-full.svg'),
   logoUrl: teamLogoUrl(player),
 })))
 
