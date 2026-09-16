@@ -1,0 +1,144 @@
+"""
+scripts/take_snapshot.py
+-------------------------
+Self-contained snapshot orchestrator, designed to run on a schedule via
+GitHub Actions. Deliberately duplicates a few small calls from
+wsl_fantasy/client.py rather than importing it, so this script has zero
+dependencies beyond `requests` and doesn't require the client package to
+be installed in the Actions runner.
+
+State machine, tracked in public/data/state.json:
+  - For the CURRENT matchday (from tour/details' currMdId):
+      - If we haven't taken a "before" snapshot yet, and we're within
+        BEFORE_WINDOW_HOURS of the deadline, take one.
+      - If the matchday is finalized (played-matchdays totalPoints is
+        no longer null) and we haven't taken an "after" snapshot yet,
+        take one, then advance state so the next run starts tracking
+        the next matchday.
+
+Run this on a schedule frequent enough to not miss either window (every
+few hours is plenty) — it's a no-op most of the time, which is fine.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import requests
+
+BASE_URL = "https://gaming.wslfootball.com"
+TOUR_ID = 1
+LANG = "en"
+OVERALL_LEAGUE_ID = "dd46193a-44de-4dfe-9526-927feb7933a2"
+
+DATA_DIR = Path("frontend/public/data")
+STATE_PATH = DATA_DIR / "state.json"
+
+# How close to the deadline (in hours) we're willing to call it "before".
+# Wide-ish window so an infrequent cron schedule still catches it.
+BEFORE_WINDOW_HOURS = 30
+
+HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://www.wslfootball.com/",
+    "User-Agent": "Mozilla/5.0 (compatible; wsl-fantasy-dashboard-bot/0.1)",
+}
+
+
+def get_json(path: str, params: dict | None = None) -> dict:
+    resp = requests.get(f"{BASE_URL}{path}", params=params, headers=HEADERS, timeout=20)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_tour_details() -> dict:
+    return get_json(f"/feeds/tour/details/{TOUR_ID}.json")["Data"]["Value"]
+
+
+def get_played_matchdays() -> list[dict]:
+    return get_json(f"/fantasy/services/gameplay/{OVERALL_LEAGUE_ID}/played-matchdays")["Data"]["Value"]
+
+
+def is_matchday_finalized(matchday_id: int) -> bool:
+    for row in get_played_matchdays():
+        if row.get("matchdayId") == matchday_id:
+            return row.get("totalPoints") is not None
+    return False
+
+
+def get_matchday_players(matchday_id: int) -> list[dict]:
+    return get_json(
+        f"/feeds/players/matchday_{LANG}_{TOUR_ID}_{matchday_id}.json",
+        params={"v": 3},
+    )["Data"]["Value"]
+
+
+def load_state() -> dict:
+    if STATE_PATH.exists():
+        return json.loads(STATE_PATH.read_text())
+    return {"tracked_matchday": None, "before_taken": False, "after_taken": False}
+
+
+def save_state(state: dict) -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    STATE_PATH.write_text(json.dumps(state, indent=2))
+
+
+def save_snapshot(matchday_id: int, label: str, players: list[dict]) -> Path:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    path = DATA_DIR / f"matchday_{matchday_id}_{label}.json"
+    path.write_text(json.dumps(players, indent=2))
+    print(f"Saved {len(players)} players -> {path}")
+    return path
+
+
+def main() -> None:
+    tour = get_tour_details()
+    current_matchday = tour["currMdId"]
+    deadline = datetime.fromisoformat(tour["deadlineDate"].replace("Z", "+00:00"))
+    now = datetime.now(timezone.utc)
+
+    state = load_state()
+
+    # New matchday appeared since we last ran — reset tracking for it.
+    if state.get("tracked_matchday") != current_matchday:
+        print(f"New matchday detected: {current_matchday} (was {state.get('tracked_matchday')})")
+        state = {"tracked_matchday": current_matchday, "before_taken": False, "after_taken": False}
+
+    took_something = False
+
+    # BEFORE snapshot: only once, within the window ahead of deadline.
+    if not state["before_taken"] and now <= deadline <= now + timedelta(hours=BEFORE_WINDOW_HOURS):
+        players = get_matchday_players(current_matchday)
+        save_snapshot(current_matchday, "before", players)
+        state["before_taken"] = True
+        took_something = True
+
+    # AFTER snapshot: only once official scoring has finalized.
+    if not state["after_taken"] and is_matchday_finalized(current_matchday):
+        players = get_matchday_players(current_matchday)
+        save_snapshot(current_matchday, "after", players)
+        state["after_taken"] = True
+        took_something = True
+
+    save_state(state)
+
+    if not took_something:
+        print(
+            f"Nothing to do right now. Matchday {current_matchday}, "
+            f"deadline {deadline.isoformat()}, now {now.isoformat()}, "
+            f"before_taken={state['before_taken']}, after_taken={state['after_taken']}"
+        )
+
+    # Signal to the workflow whether anything changed, for the commit step.
+    github_output = os.environ.get("GITHUB_OUTPUT")
+    if github_output:
+        with open(github_output, "a") as f:
+            f.write(f"changed={'true' if took_something else 'false'}\n")
+
+
+if __name__ == "__main__":
+    main()
