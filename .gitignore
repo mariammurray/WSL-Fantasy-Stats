@@ -1,0 +1,5 @@
+__pycache__
+data/snapshots
+analyze.py
+client.py
+node_modules
