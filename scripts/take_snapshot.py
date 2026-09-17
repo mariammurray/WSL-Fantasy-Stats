@@ -14,8 +14,6 @@ import requests
 BASE_URL = 'https://gaming.wslfootball.com'
 TOUR_ID = 1
 LANG = 'en'
-OVERALL_LEAGUE_ID = 'dd46193a-44de-4dfe-9526-927feb7933a2'
-
 DATA_DIR = Path('frontend/public/data')
 STATE_PATH = DATA_DIR / 'state.json'
 BEFORE_WINDOW_HOURS = 30
@@ -41,17 +39,6 @@ def get_tour_details() -> dict:
             'The WSL widgets feed did not include currMdId and deadlineDate.'
         )
     return details
-
-
-def get_played_matchdays() -> list[dict]:
-    return get_json(f'/fantasy/services/gameplay/{OVERALL_LEAGUE_ID}/played-matchdays')['Data']['Value']
-
-
-def is_matchday_finalized(matchday_id: int) -> bool:
-    return any(
-        row.get('matchdayId') == matchday_id and row.get('totalPoints') is not None
-        for row in get_played_matchdays()
-    )
 
 
 def get_matchday_players(matchday_id: int) -> list[dict]:
@@ -98,20 +85,21 @@ def main() -> None:
     now = datetime.now(timezone.utc)
     state = load_state()
 
-    if state.get('tracked_matchday') != current_matchday:
-        print(f'New matchday detected: {current_matchday} (was {state.get("tracked_matchday")})')
-        state = {'tracked_matchday': current_matchday, 'before_taken': False, 'after_taken': False}
-
     took_something = False
+
+    previous_matchday = state.get('tracked_matchday')
+    if previous_matchday and previous_matchday != current_matchday and not state.get('after_taken'):
+        print(f'Matchday {previous_matchday} has ended; saving its after snapshot.')
+        save_snapshot(previous_matchday, 'after', get_matchday_players(previous_matchday))
+        took_something = True
+
+    if previous_matchday != current_matchday:
+        print(f'New matchday detected: {current_matchday} (was {previous_matchday})')
+        state = {'tracked_matchday': current_matchday, 'before_taken': False, 'after_taken': False}
 
     if not state['before_taken'] and now <= deadline <= now + timedelta(hours=BEFORE_WINDOW_HOURS):
         save_snapshot(current_matchday, 'before', get_matchday_players(current_matchday))
         state['before_taken'] = True
-        took_something = True
-
-    if not state['after_taken'] and is_matchday_finalized(current_matchday):
-        save_snapshot(current_matchday, 'after', get_matchday_players(current_matchday))
-        state['after_taken'] = True
         took_something = True
 
     save_state(state)
