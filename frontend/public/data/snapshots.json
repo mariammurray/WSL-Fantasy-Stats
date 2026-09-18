@@ -6,5 +6,9 @@
   {
     "matchday": 2,
     "path": "matchday_2.json"
+  },
+  {
+    "matchday": 3,
+    "path": "matchday_3.json"
   }
 ]
