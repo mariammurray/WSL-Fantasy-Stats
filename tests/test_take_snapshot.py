@@ -11,6 +11,7 @@ SCRIPT_PATH = REPO_ROOT / 'scripts' / 'take_snapshot.py'
 
 
 def load_snapshot_module():
+    sys.modules.pop('take_snapshot', None)
     spec = importlib.util.spec_from_file_location('take_snapshot', SCRIPT_PATH)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -21,6 +22,9 @@ def load_snapshot_module():
 class TakeSnapshotTests(unittest.TestCase):
     def setUp(self):
         self.module = load_snapshot_module()
+
+    def tearDown(self):
+        sys.modules.pop('take_snapshot', None)
 
     def test_get_tour_details_uses_public_widgets_feed(self):
         payload = {
