@@ -7,6 +7,7 @@ const loading = ref(true)
 const error = ref('')
 const activeView = ref('all')
 const weeklyPointsByPlayer = ref(new Map())
+const previousOwnershipByPlayer = ref(new Map())
 const snapshotBatches = ref(new Map())
 const selectedMatchday = ref(2)
 const snapshots = ref([])
@@ -55,6 +56,9 @@ const showMatchday = (matchday) => {
   const previousPointsByPlayer = new Map(
     previous.map((player) => [player.playerId, Number(player.totalPoints ?? 0)]),
   )
+  const previousOwnership = new Map(
+    previous.map((player) => [player.playerId, Number(player.selectedPercentage ?? 0)]),
+  )
   const byId = new Map()
   const pointsByPlayer = new Map()
 
@@ -68,6 +72,7 @@ const showMatchday = (matchday) => {
 
   selectedMatchday.value = matchday
   weeklyPointsByPlayer.value = pointsByPlayer
+  previousOwnershipByPlayer.value = previousOwnership
   players.value = [...byId.values()]
 }
 
@@ -91,28 +96,42 @@ const loadSnapshots = async () => {
   }
 }
 
-const normalisedPlayers = computed(() => players.value.map((player) => ({
-  id: player.playerId,
-  name: player.mediaFirstName && player.mediaLastName
-    ? `${player.mediaFirstName} ${player.mediaLastName}`
-    : player.mediaShortName,
-  team: player.teamShortName,
-  teamId: player.teamId,
-  position: player.skillName,
-  ownership: Number(player.selectedPercentage ?? 0),
-  points: Number(player.totalPoints ?? 0),
-  averagePoints: Number(player.averagePoints ?? 0),
-  thisWeekPoints: weeklyPointsByPlayer.value.get(player.playerId) ?? 0,
-  transfersIn: Number(player.transferIn ?? 0),
-  transfersOut: Number(player.transferOut ?? 0),
-  weekPoints: weeklyPointsByPlayer.value.get(player.playerId) ?? 0,
-  matchdayId: player.matchdayId,
-  form: player.form,
-  league: player.league ?? leagueNames[player.competitionId] ?? 'Unknown',
-  imageUrls: playerImageUrls(player),
-  imageUrl: playerImageUrls(player)[0] ?? localAssetUrl('user-solid-full.svg'),
-  logoUrl: teamLogoUrl(player),
-})))
+const weeksElapsed = computed(() => matchdays.value.filter((matchday) => matchday <= selectedMatchday.value).length || 1)
+
+const normalisedPlayers = computed(() => players.value.map((player) => {
+  const points = Number(player.totalPoints ?? 0)
+  const price = Number(player.valuation ?? 0)
+  const ownership = Number(player.selectedPercentage ?? 0)
+  const previousOwnership = previousOwnershipByPlayer.value.get(player.playerId) ?? ownership
+  const ownershipChange = ownership - previousOwnership
+
+  return {
+    id: player.playerId,
+    name: player.mediaFirstName && player.mediaLastName
+      ? `${player.mediaFirstName} ${player.mediaLastName}`
+      : player.mediaShortName,
+    team: player.teamShortName,
+    teamId: player.teamId,
+    position: player.skillName,
+    ownership,
+    previousOwnership,
+    ownershipChange,
+    ownershipChangeAbs: Math.abs(ownershipChange),
+    points,
+    price,
+    pointsPerMillion: price > 0 ? points / price : 0,
+    averagePointsPerAppearance: Number(player.averagePoints ?? 0),
+    averagePointsPerWeek: points / weeksElapsed.value,
+    thisWeekPoints: weeklyPointsByPlayer.value.get(player.playerId) ?? 0,
+    weekPoints: weeklyPointsByPlayer.value.get(player.playerId) ?? 0,
+    matchdayId: player.matchdayId,
+    form: player.form,
+    league: player.league ?? leagueNames[player.competitionId] ?? 'Unknown',
+    imageUrls: playerImageUrls(player),
+    imageUrl: playerImageUrls(player)[0] ?? localAssetUrl('user-solid-full.svg'),
+    logoUrl: teamLogoUrl(player),
+  }
+}))
 
 const matchweek = computed(() => selectedMatchday.value)
 
@@ -146,10 +165,11 @@ const biggestUpsets = computed(() => normalisedPlayers.value
 const leaderboardCategories = [
   { key: 'points', label: 'Most total points' },
   { key: 'weekPoints', label: 'Most points this week' },
-  { key: 'averagePoints', label: 'Most average points' },
+  { key: 'averagePointsPerAppearance', label: 'Most average points (per appearance)' },
+  { key: 'averagePointsPerWeek', label: 'Most average points (per week)' },
+  { key: 'pointsPerMillion', label: 'Best points per million' },
   { key: 'ownership', label: 'Most selected' },
-  { key: 'transfersIn', label: 'Most transfers in' },
-  { key: 'transfersOut', label: 'Most transfers out' },
+  { key: 'ownershipChangeAbs', label: 'Biggest change in selection %' },
 ]
 
 const leaderboardRows = computed(() => leaderboardCategories.map((category) => ({
@@ -182,10 +202,18 @@ const leaderboardUnit = (key) => ({
   points: ' Points',
   ownership: '%',
   weekPoints: ' Points',
-  averagePoints: ' Points',
-  transfersIn: ' Transfers',
-  transfersOut: ' Transfers',
+  averagePointsPerAppearance: ' Points',
+  averagePointsPerWeek: ' Points',
+  pointsPerMillion: ' Pts/£M',
 }[key] ?? '')
+
+const leaderboardDisplay = (player, key) => {
+  if (key === 'ownershipChangeAbs') {
+    const sign = player.ownershipChange > 0 ? '+' : ''
+    return `${formatPoints(player.previousOwnership)}% \u2192 ${formatPoints(player.ownership)}% (${sign}${formatPoints(player.ownershipChange)}%)`
+  }
+  return `${formatPoints(player[key])}${leaderboardUnit(key)}`
+}
 
 onMounted(loadSnapshots)
 </script>
@@ -297,7 +325,7 @@ onMounted(loadSnapshots)
                   <p class="team"><span>{{ row.player.team }}</span></p>
                   <div class="card-stats">
                     <div>
-                      <strong>{{ formatPoints(row.player[category.key]) }}{{ leaderboardUnit(category.key) }}</strong>
+                      <strong>{{ leaderboardDisplay(row.player, category.key) }}</strong>
                     </div>
                   </div>
                 </article>

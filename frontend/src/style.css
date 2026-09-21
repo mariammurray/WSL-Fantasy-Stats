@@ -13,6 +13,8 @@
   --pink: #CF3985;
   --surface-gradient: linear-gradient(to top right, var(--line), var(--paper));
   --surface-radius: 20px;
+  /* Number of category columns shown in the leaderboard before the GOAT column (scrolls off-screen). */
+  --leaderboard-columns: 7;
 }
  
 * {
@@ -299,22 +301,25 @@ h2 {
  
 .leaderboard-track {
   --leaderboard-card-width: 240px;
-  --leaderboard-gap: max(0px, calc((100% - 120px - (6 * var(--leaderboard-card-width))) / 6));
+  /* 263px = grid's 23px left padding + one extra card width, so N columns exactly fill the track regardless of N. */
+  --leaderboard-gap: max(0px, calc((100% - 263px - ((var(--leaderboard-columns) - 1) * var(--leaderboard-card-width))) / (var(--leaderboard-columns) - 1)));
   width: 90%;
   max-width: 100%;
   margin: 0 auto;
   overflow-x: auto;
   padding-block: 2em;
 }
- 
+
 .leaderboard-grid {
   --leaderboard-card-width: 240px;
   --leaderboard-gap: inherit;
   --leaderboard-step: calc(var(--leaderboard-card-width) + var(--leaderboard-gap));
   display: grid;
-  grid-template-columns: repeat(7, var(--leaderboard-card-width));
+  grid-auto-flow: column;
+  grid-template-columns: repeat(var(--leaderboard-columns), var(--leaderboard-card-width));
+  grid-auto-columns: var(--leaderboard-card-width);
   column-gap: var(--leaderboard-gap);
-  min-width: calc((7 * var(--leaderboard-card-width)) + (6 * var(--leaderboard-gap)));
+  min-width: calc((var(--leaderboard-columns) * var(--leaderboard-card-width)) + ((var(--leaderboard-columns) - 1) * var(--leaderboard-gap)));
   padding: 0 0 0 23px;
 }
  
@@ -330,9 +335,10 @@ h2 {
   text-align: center;
   background-image: linear-gradient(90deg, var(--orange), var(--purple));
   background-repeat: no-repeat;
-  background-size: calc((7 * var(--leaderboard-card-width)) + (6 * var(--leaderboard-gap))) 100%;
+  background-size: calc((var(--leaderboard-columns) * var(--leaderboard-card-width)) + ((var(--leaderboard-columns) - 1) * var(--leaderboard-gap))) 100%;
 }
- 
+
+/* One rule per column position (nth-child index). If --leaderboard-columns changes, add/remove rules so they run from nth-child(2) to nth-child(N). The GOAT column isn't part of this strip; it has its own gold header below. */
 .leaderboard-column:nth-child(2)>h2 {
   background-position: calc(-1 * var(--leaderboard-step)) 0;
 }
@@ -355,6 +361,12 @@ h2 {
  
 .leaderboard-column:nth-child(7)>h2 {
   background-position: calc(-6 * var(--leaderboard-step)) 0;
+}
+
+.goat-column>h2 {
+  background-image: linear-gradient(90deg, #b8860b, #f0c84b);
+  background-size: 100% 100%;
+  background-position: 0 0;
 }
  
 .leaderboard-row {
