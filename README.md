@@ -1,24 +1,51 @@
-# wsl-fantasy
 
-An **unofficial** client and analysis toolkit for the Barclays WSL and
-WSL2 Fantasy game (wslfootball.com/fantasy), reverse-engineered from
-public network traffic in September 2026.
+An unofficial client and analysis dashboard for the Barclays WSL and
+WSL2 Fantasy game (wslfootball.com/fantasy).
 
-This is not affiliated with, endorsed by, or supported by WSL Football,
-Sportz Interactive, or Opta. It does not access logged-in user
-data or private league info.
+This is for fun and does not access logged-in user
+data or private league info, nor is it affiliated with, endorsed by, or supported by WSL Football.
 
 
-## What's been mapped so far
+### What I'm accessing
 
-| Feed | URL pattern | Auth needed | Notes |
-|---|---|---|---|
-| Manifest | `/feeds/live/mixapi/mixapi_{tourId}.json` | No | Cache-buster version string per feed name |
-| Matchday roster | `/feeds/players/matchday_{lang}_{tourId}_{matchdayId}.json` | No | **Main dataset.** All ~744 players: price, ownership %, points, form |
-| Player detail | `/feeds/popup/stats/player_{lang}_{tourId}_{playerId}.json` | No | Per-player season stat breakdown, recent form, upcoming fixtures |
+Public feeds (`gaming.wslfootball.com/feeds/...`):
+
+| Feed | URL pattern | Notes |
+|---|---|---|
+| Manifest | `/feeds/live/mixapi/mixapi_{tourId}.json` | Cache-buster version string per feed name; no data itself |
+| Matchday roster | `/feeds/players/matchday_{lang}_{tourId}_{matchdayId}.json?v=3` | **Main dataset.** All ~744 players: price, ownership %, cumulative points, form |
+| Player detail | `/feeds/popup/stats/player_{lang}_{tourId}_{playerId}.json` | Per-player season stat breakdown, recent form, upcoming fixtures |
+| Config | `/feeds/config/web/configurations.json` | Club colour hex codes, image paths, player list columns |
+| Teams/competitions | `/feeds/filters/teams/competition/{lang}_{tourId}.json` | Canonical team + competition names, IDs, crest/imagery paths |
+| Live scoring | `/feeds/live/score/scoring.json` | In-play per-player scoring breakdown; empty array when no match is live |
+| Home widget | `/feeds/home/widgets/1.json?v=2` | Current matchday/leg IDs, deadlines, top-3 overall leaderboard; shape needs re-verifying |
+| Fixtures | `/feeds/fixtures/fixtures_{lang}_{tourId}.json?v=3` | Inferred only, not yet confirmed; full fixture list |
+
+Gated feeds (`gaming.wslfootball.com/fantasy/services/...`, require `x-game-token`):
+
+| Feed | URL pattern | Notes |
+|---|---|---|
+| Public league standings | `/fantasy/services/leagues/public/{leagueId}/global` | e.g. "Barclays Season Race" overall league |
+| Matchday scoring status | `/fantasy/services/gameplay/{OVERALL_LEAGUE_ID}/played-matchdays` | `totalPoints: null` means that matchday isn't officially finalized yet |
 
 `tourId` is `1` for the current season. `matchdayId` corresponds to
-gameweek number 
+gameweek number
+
+### How it updates
+All displayed numbers are calculated using the data from a set of json files which represent how the data looked before and after each game week.  These snapshots are kept and updated via the below process:
+
+[`scripts/take_snapshot.py`](scripts/take_snapshot.py) runs daily at 06:00
+UTC via [GitHub Actions](.github/workflows/data-snapshot.yml) 
+Each run:
+
+- Fetches current matchday and its deadline from the home widget feed.
+- If the matchday has changed, that's the cue to take an "after" snapshot for the matchday
+  that just ended
+- If the current matchday's deadline is within the next 30 hours, a
+  "before" snapshot is saved.
+- Commits any new/changed files under `frontend/public/data/` back to the repo
+
+So data is only updated once a day at most, and only around matchday deadlines/rollovers.
 
 
 MIT License
