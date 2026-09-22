@@ -28,6 +28,9 @@ const playerImageUrls = (player) => [
   player.teamImagery?.playerImage_home_right,
 ].filter(Boolean).map(mediaUrl)
 
+// tracked reactively so the class binding survives re-renders of freshly computed player objects
+const exhaustedPlayerImages = ref(new Set())
+
 const handlePlayerImageError = (event, player) => {
   const currentIndex = Number(event.target.dataset.imageIndex ?? 0)
   const nextUrl = player.imageUrls[currentIndex + 1]
@@ -38,11 +41,13 @@ const handlePlayerImageError = (event, player) => {
     return
   }
 
-  // only exhausted all candidate URLs get the fallback styling
-  event.target.classList.add('is-fallback')
+  exhaustedPlayerImages.value.add(player.id)
   event.target.src = localAssetUrl('user-solid-full.svg')
   event.target.alt = 'Default player profile icon'
 }
+
+const isFallbackImage = (player) => player.imageUrl === localAssetUrl('user-solid-full.svg')
+  || exhaustedPlayerImages.value.has(player.id)
 
 const teamLogoUrl = (player) => mediaUrl(
   player.teamImagery?.teamLogo
@@ -280,7 +285,7 @@ onMounted(loadSnapshots)
               <span class="position">{{ player.position }}</span>
             </div>
             <div class="player-image">
-              <img :class="{ 'is-fallback': player.imageUrl === '/user-solid-full.svg' }" :src="player.imageUrl" :alt="`${player.name} portrait`" loading="lazy" @error="handlePlayerImageError($event, player)" />
+              <img :class="{ 'is-fallback': isFallbackImage(player) }" :src="player.imageUrl" :alt="`${player.name} portrait`" loading="lazy" @error="handlePlayerImageError($event, player)" />
               <img v-if="player.logoUrl" class="team-logo" :src="player.logoUrl" :alt="`${player.team} crest`" loading="lazy" />
             </div>
             <h3>{{ player.name }}</h3>
@@ -319,7 +324,7 @@ onMounted(loadSnapshots)
                     <span class="position">{{ row.player.position }}</span>
                   </div>
                   <div class="player-image">
-                    <img :class="{ 'is-fallback': row.player.imageUrl === '/user-solid-full.svg' }" :src="row.player.imageUrl" :alt="`${row.player.name} portrait`" loading="lazy" @error="handlePlayerImageError($event, row.player)" />
+                    <img :class="{ 'is-fallback': isFallbackImage(row.player) }" :src="row.player.imageUrl" :alt="`${row.player.name} portrait`" loading="lazy" @error="handlePlayerImageError($event, row.player)" />
                     <img v-if="row.player.logoUrl" class="team-logo" :src="row.player.logoUrl" :alt="`${row.player.team} crest`" loading="lazy" />
                   </div>
                   <h3>{{ row.player.name }}</h3>
@@ -354,7 +359,7 @@ onMounted(loadSnapshots)
                 <span class="position">{{ goat.position }}</span>
               </div>
               <div class="player-image">
-                <img :class="{ 'is-fallback': goat.imageUrl === '/user-solid-full.svg' }" :src="goat.imageUrl" :alt="`${goat.name} portrait`" loading="lazy" @error="handlePlayerImageError($event, goat)" />
+                <img :class="{ 'is-fallback': isFallbackImage(goat) }" :src="goat.imageUrl" :alt="`${goat.name} portrait`" loading="lazy" @error="handlePlayerImageError($event, goat)" />
                 <img v-if="goat.logoUrl" class="team-logo" :src="goat.logoUrl" :alt="`${goat.team} crest`" loading="lazy" />
               </div>
               <h3>{{ goat.name }}</h3>
