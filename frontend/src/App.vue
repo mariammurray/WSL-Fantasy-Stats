@@ -29,7 +29,6 @@ const playerImageUrls = (player) => [
 ].filter(Boolean).map(mediaUrl)
 
 const handlePlayerImageError = (event, player) => {
-  event.target.classList.add('is-fallback')
   const currentIndex = Number(event.target.dataset.imageIndex ?? 0)
   const nextUrl = player.imageUrls[currentIndex + 1]
 
@@ -39,6 +38,8 @@ const handlePlayerImageError = (event, player) => {
     return
   }
 
+  // only exhausted all candidate URLs get the fallback styling
+  event.target.classList.add('is-fallback')
   event.target.src = localAssetUrl('user-solid-full.svg')
   event.target.alt = 'Default player profile icon'
 }

@@ -8,10 +8,6 @@
     gap: 12px;
   }
  
-  /* .status-pill {
-    display: none;
-  } */
- 
   .overview {
     grid-template-columns: 1fr 1fr;
     margin-top: 24px;

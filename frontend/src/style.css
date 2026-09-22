@@ -139,8 +139,8 @@ h1 {
   cursor: pointer;
   box-shadow: 0 3px 12px rgb(23 36 43 / 18%);
 }
- 
-.week-selector button:hover {
+
+.week-arrow:hover {
   background: var(--pink);
 }
  
