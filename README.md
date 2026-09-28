@@ -1,9 +1,8 @@
+To celebrate the first ever official WSL fantasy football game, I sifted through the network requests and minified JS bundles until I had enough data to make my own, auto-updating fun-fact dashboard.  This is for fun and does not access logged-in user data or private league info, nor is it affiliated with, endorsed by, or supported by WSL Football.
 
-An unofficial client and analysis dashboard for the Barclays WSL and
-WSL2 Fantasy game (wslfootball.com/fantasy).
+Especially useful for spotlighting high-scoring WSL2 players who I might have missed otherwise, it starts with the players who scored the most while being selected the least (and vice versa), and includes superlatives like points per million £ pricetag and biggest change in ownership %. 
 
-This is for fun and does not access logged-in user
-data or private league info, nor is it affiliated with, endorsed by, or supported by WSL Football.
+I used GitHub Actions to automate taking data snapshots before/after gamedays and then trigger a re-render, so that I could host the whole thing on GitHub Pages.  Standings from previous weeks can be toggled through at any time, and I made layouts which work for mobile and desktop.
 
 
 ### What I'm accessing
