@@ -4,6 +4,7 @@ import { clubColorCode } from './data/clubColours'
 
 const players = ref([])
 const loading = ref(true)
+const fontsReady = ref(false)
 const error = ref('')
 const activeView = ref('all')
 const weeklyPointsByPlayer = ref(new Map())
@@ -188,6 +189,23 @@ const leaderboardRows = computed(() => leaderboardCategories.map((category) => (
   })),
 })))
 
+const positionCategories = [
+  { key: 'gk', label: 'GK' },
+  { key: 'def', label: 'DEF' },
+  { key: 'mid', label: 'MID' },
+  { key: 'fwd', label: 'FWD' },
+]
+
+const positionLeaderboardRows = computed(() => positionCategories.map((category) => ({
+  ...category,
+  players: ['WSL', 'WSL 2'].map((league) => ({
+    league,
+    player: normalisedPlayers.value
+      .filter((candidate) => candidate.league === league && candidate.position === category.key)
+      .sort((a, b) => b.weekPoints - a.weekPoints)[0],
+  })),
+})))
+
 const goat = computed(() => normalisedPlayers.value.find(
   (player) => player.id === 'wpll::Football_Player::3ade13d67e974a919693df7eee9bc18f',
 ))
@@ -221,14 +239,27 @@ const leaderboardDisplay = (player, key) => {
   return `${formatPoints(player[key])}${leaderboardUnit(key)}`
 }
 
+// custom webfonts load async, so wait for them before revealing real text to avoid a fallback-font flash
+const waitForFonts = async () => {
+  try {
+    if (document.fonts?.ready) await document.fonts.ready
+  } finally {
+    fontsReady.value = true
+  }
+}
+
+const showSkeleton = computed(() => loading.value || !fontsReady.value)
+
 onMounted(loadSnapshots)
+onMounted(waitForFonts)
 </script>
 
 <template>
   <main class="app-shell">
     <header class="masthead">
       <div class="masthead-copy">
-        <h1>WSL <br> <span class="fantasy-script">Fantasy Football</span> <br> Weekly Stats</h1>
+        <h1 v-if="fontsReady">WSL <br> <span class="fantasy-script">Fantasy Football</span> <br> Weekly Stats</h1>
+        <div v-else class="skeleton-title-block" aria-hidden="true"></div>
       </div>
     </header>
       <div class="week-selector" aria-label="Select matchday">
@@ -251,7 +282,28 @@ onMounted(loadSnapshots)
         >&rarr;</button>
       </div>
 
-    <p v-if="loading" class="state-message">Loading the latest player board...</p>
+    <div v-if="showSkeleton" class="sections" aria-busy="true" aria-label="Loading player board">
+      <section v-for="n in 2" :key="`skeleton-section-${n}`" class="player-section">
+        <div class="section-banner-row" :class="{ 'section-banner-row-upsets': n === 2 }">
+          <div class="section-heading skeleton-heading" :class="{ 'section-heading-upsets': n === 2 }"></div>
+        </div>
+        <div class="player-rail">
+          <article v-for="card in 10" :key="card" class="player-card skeleton-card" aria-hidden="true">
+            <div class="card-topline">
+              <span class="rank">&nbsp;</span>
+              <span class="position">&nbsp;</span>
+            </div>
+            <div class="player-image"></div>
+            <h3>&nbsp;</h3>
+            <p class="team"><span>&nbsp;</span></p>
+            <div class="card-stats">
+              <div><span>&nbsp;</span><strong>&nbsp;</strong></div>
+              <div><span>&nbsp;</span><strong>&nbsp;</strong></div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
     <p v-else-if="error" class="state-message error-message">{{ error }}</p>
     <div v-else class="sections">
       <section v-for="section in visibleSections.filter((item) => item.players)" :key="section.key" class="player-section">
@@ -370,6 +422,45 @@ onMounted(loadSnapshots)
             </article>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section v-if="activeView === 'all'" class="leaderboard-section position-leaderboard-section">
+        <div class="position-leaderboard-layout">
+        <div class="leaderboard-track">
+          <div class="leaderboard-grid">
+          <div v-for="category in positionLeaderboardRows" :key="category.key" class="leaderboard-column">
+            <h2>{{ category.label }}</h2>
+            <div class="leaderboard-cards">
+              <div v-for="row in category.players" :key="row.league" class="leaderboard-row">
+                <h3 class="league-row-heading">{{ row.league }}</h3>
+                <article
+                  v-if="row.player"
+                  class="player-card leaderboard-card"
+                  :class="row.league === 'WSL 2' ? 'league-wsl2' : 'league-wsl'"
+                  :style="{ '--team-color': clubColorCode[row.player.teamId] || 'var(--card-accent)' }"
+                >
+                  <div class="card-topline">
+                    <span class="position">{{ row.player.position }}</span>
+                  </div>
+                  <div class="player-image">
+                    <img :class="{ 'is-fallback': isFallbackImage(row.player) }" :src="row.player.imageUrl" :alt="`${row.player.name} portrait`" loading="lazy" @error="handlePlayerImageError($event, row.player)" />
+                    <img v-if="row.player.logoUrl" class="team-logo" :src="row.player.logoUrl" :alt="`${row.player.team} crest`" loading="lazy" />
+                  </div>
+                  <h3>{{ row.player.name }}</h3>
+                  <p class="team"><span>{{ row.player.team }}</span></p>
+                  <div class="card-stats">
+                    <div>
+                      <strong>{{ leaderboardDisplay(row.player, 'weekPoints') }}</strong>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <h2 class="position-leaderboard-title">Points this week</h2>
         </div>
       </section>
     </div>

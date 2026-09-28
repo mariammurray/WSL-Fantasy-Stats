@@ -299,6 +299,47 @@ h2 {
   border-radius: var(--surface-radius) var(--surface-radius);
 }
  
+.position-leaderboard-section {
+  --leaderboard-visible-columns: 4;
+  background-image: none;
+}
+
+.position-leaderboard-layout {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 90%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.position-leaderboard-layout .leaderboard-track {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+}
+
+.position-leaderboard-title {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--paper);
+  text-align: center;
+  background: none;
+  -webkit-text-fill-color: var(--paper);
+}
+
+.position-leaderboard-section .leaderboard-grid {
+  width: fit-content;
+  margin-inline: auto;
+}
+
+.position-leaderboard-section .leaderboard-column>h2 {
+  background: none;
+  color: var(--paper);
+  -webkit-text-fill-color: var(--paper);
+}
+
 .leaderboard-track {
   --leaderboard-card-width: 240px;
   /* 263px = grid's 23px left padding + one extra card width, so N columns exactly fill the track regardless of N. */
@@ -316,10 +357,10 @@ h2 {
   --leaderboard-step: calc(var(--leaderboard-card-width) + var(--leaderboard-gap));
   display: grid;
   grid-auto-flow: column;
-  grid-template-columns: repeat(var(--leaderboard-columns), var(--leaderboard-card-width));
+  grid-template-columns: repeat(var(--leaderboard-visible-columns, var(--leaderboard-columns)), var(--leaderboard-card-width));
   grid-auto-columns: var(--leaderboard-card-width);
   column-gap: var(--leaderboard-gap);
-  min-width: calc((var(--leaderboard-columns) * var(--leaderboard-card-width)) + ((var(--leaderboard-columns) - 1) * var(--leaderboard-gap)));
+  min-width: calc((var(--leaderboard-visible-columns, var(--leaderboard-columns)) * var(--leaderboard-card-width)) + ((var(--leaderboard-visible-columns, var(--leaderboard-columns)) - 1) * var(--leaderboard-gap)));
   padding: 0 0 0 23px;
 }
  
@@ -469,6 +510,8 @@ h2 {
   --card-bg: #b8860b;
   --card-ink: #211706;
   background: linear-gradient(45deg, #b8860b 0%, #e8bd45 30%, #fff4ad 60%, #d4a72c 90%, #f0c84b 100%);
+  box-shadow: none;
+  border: none;
 }
  
 .goat-stars {
@@ -695,9 +738,55 @@ footer {
     transform: translateX(36px);
     opacity: 0;
   }
- 
+
   to {
     transform: translateX(0);
     opacity: 1;
+  }
+}
+
+.skeleton-title-block {
+  width: min(320px, 60vw);
+  height: 108px;
+  margin-left: auto;
+  background: black;
+  border-radius: 6px;
+}
+
+.skeleton-heading {
+  min-height: 74px;
+  background: black;
+}
+
+.skeleton-card {
+  border-color: color-mix(in srgb, var(--paper) 60%, transparent);
+  box-shadow: none;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--paper) 15%, transparent) 25%, color-mix(in srgb, var(--paper) 35%, transparent) 50%, color-mix(in srgb, var(--paper) 15%, transparent) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 3s ease-in-out infinite;
+}
+
+/* placeholder text mirrors real card markup so heights match exactly, but stays invisible */
+.skeleton-card * {
+  visibility: hidden;
+}
+
+.skeleton-card .player-image {
+  background: none;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-card {
+    animation: none;
   }
 }

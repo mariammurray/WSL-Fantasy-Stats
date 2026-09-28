@@ -82,6 +82,21 @@
   .leaderboard-section {
     padding-block: 2em;
   }
+
+  .position-leaderboard-layout {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .position-leaderboard-layout .leaderboard-track {
+    width: 100%;
+  }
+
+  .position-leaderboard-title {
+    font-size: 30px;
+  }
  
   .leaderboard-grid {
     display: flex;
