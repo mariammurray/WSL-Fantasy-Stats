@@ -26,5 +26,9 @@
   {
     "matchday": 7,
     "path": "matchday_7.json"
+  },
+  {
+    "matchday": 8,
+    "path": "matchday_8.json"
   }
 ]
