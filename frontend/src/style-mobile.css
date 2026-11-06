@@ -1,6 +1,7 @@
 @media (max-width: 700px) {
   .app-shell {
     width: 100%;
+    padding: 0;
   }
  
   .masthead {
@@ -26,10 +27,6 @@
 
   .section-legend {
     margin-block: 1.5em;
-  }
- 
-  .sections {
-    gap: 38px;
   }
  
   .section-banner-row {
@@ -65,6 +62,12 @@
     overscroll-behavior-x: contain;
     padding: 7px 0 23px;
     grid-template-columns: none;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .player-rail::-webkit-scrollbar {
+    display: none;
   }
  
   .player-card {
