@@ -13,8 +13,9 @@
   --pink: #CF3985;
   --surface-gradient: linear-gradient(to top right, var(--line), var(--paper));
   --surface-radius: 20px;
-  /* Number of category columns shown in the leaderboard before the GOAT column (scrolls off-screen). */
-  --leaderboard-columns: 7;
+  --player-card-width: 156px;
+  --player-card-gap: 8px;
+  --content-width: min(1632px, calc(100% - 32px));
 }
  
 * {
@@ -198,7 +199,7 @@ h1 {
 }
  
 .player-section>* {
-  width: 90%;
+  width: var(--content-width);
   margin-inline: auto;
 }
  
@@ -299,7 +300,6 @@ h2 {
 }
  
 .position-leaderboard-section {
-  --leaderboard-visible-columns: 4;
   background-image: none;
 }
 
@@ -307,30 +307,26 @@ h2 {
   display: flex;
   align-items: center;
   gap: 24px;
-  width: 90%;
+  width: var(--content-width);
   max-width: 100%;
   margin: 0 auto;
 }
 
 .position-leaderboard-layout .leaderboard-track {
-  flex: 0 0 auto;
+  flex: 1 1 800px;
+  min-width: 0;
   width: auto;
   max-width: 100%;
   margin: 0;
 }
 
 .position-leaderboard-title {
-  flex: 1 1 auto;
+  flex: 1 1 180px;
   margin: 0;
   color: var(--paper);
   text-align: center;
   background: none;
   -webkit-text-fill-color: var(--paper);
-}
-
-.position-leaderboard-section .leaderboard-grid {
-  width: fit-content;
-  margin-inline: auto;
 }
 
 .position-leaderboard-section .leaderboard-column>h2 {
@@ -340,67 +336,81 @@ h2 {
 }
 
 .leaderboard-track {
-  --leaderboard-card-width: 240px;
-  /* 263px = grid's 23px left padding + one extra card width, so N columns exactly fill the track regardless of N. */
-  --leaderboard-gap: max(0px, calc((100% - 263px - ((var(--leaderboard-columns) - 1) * var(--leaderboard-card-width))) / (var(--leaderboard-columns) - 1)));
-  width: 90%;
+  width: var(--content-width);
   max-width: 100%;
   margin: 0 auto;
   overflow-x: auto;
   padding-block: 2em;
 }
 
+.goat-track {
+  display: flex;
+  gap: 15px;
+}
+
 .leaderboard-grid {
-  --leaderboard-card-width: 240px;
-  --leaderboard-gap: inherit;
-  --leaderboard-step: calc(var(--leaderboard-card-width) + var(--leaderboard-gap));
   display: grid;
-  grid-auto-flow: column;
-  grid-template-columns: repeat(var(--leaderboard-visible-columns, var(--leaderboard-columns)), var(--leaderboard-card-width));
-  grid-auto-columns: var(--leaderboard-card-width);
-  column-gap: var(--leaderboard-gap);
-  min-width: calc((var(--leaderboard-visible-columns, var(--leaderboard-columns)) * var(--leaderboard-card-width)) + ((var(--leaderboard-visible-columns, var(--leaderboard-columns)) - 1) * var(--leaderboard-gap)));
-  padding: 0 0 0 23px;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--player-card-width) + 23px), 1fr));
+  column-gap: 15px;
+  width: 100%;
+  min-width: 0;
+}
+
+.goat-track .leaderboard-grid {
+  flex: 0 0 100%;
+}
+
+.goat-column {
+  flex: 0 0 calc(var(--player-card-width) + 23px);
 }
  
 .leaderboard-column {
-  width: 240px;
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
   min-width: 0;
+}
+
+.leaderboard-cards {
+  display: contents;
+}
+
+.goat-column {
+  display: block;
 }
  
 .leaderboard-column>h2 {
-  min-height: 48px;
+  min-height: 4em;
   margin-bottom: 28px;
   font-size: 25px;
   text-align: center;
   background-image: linear-gradient(90deg, var(--orange), var(--purple));
   background-repeat: no-repeat;
-  background-size: calc((var(--leaderboard-columns) * var(--leaderboard-card-width)) + ((var(--leaderboard-columns) - 1) * var(--leaderboard-gap))) 100%;
+  background-size: 700% 100%;
 }
 
-/* One rule per column position (nth-child index). If --leaderboard-columns changes, add/remove rules so they run from nth-child(2) to nth-child(N). The GOAT column isn't part of this strip; it has its own gold header below. */
 .leaderboard-column:nth-child(2)>h2 {
-  background-position: calc(-1 * var(--leaderboard-step)) 0;
+  background-position: 16.6667% 0;
 }
  
 .leaderboard-column:nth-child(3)>h2 {
-  background-position: calc(-2 * var(--leaderboard-step)) 0;
+  background-position: 33.3333% 0;
 }
  
 .leaderboard-column:nth-child(4)>h2 {
-  background-position: calc(-3 * var(--leaderboard-step)) 0;
+  background-position: 50% 0;
 }
  
 .leaderboard-column:nth-child(5)>h2 {
-  background-position: calc(-4 * var(--leaderboard-step)) 0;
+  background-position: 66.6667% 0;
 }
  
 .leaderboard-column:nth-child(6)>h2 {
-  background-position: calc(-5 * var(--leaderboard-step)) 0;
+  background-position: 83.3333% 0;
 }
  
 .leaderboard-column:nth-child(7)>h2 {
-  background-position: calc(-6 * var(--leaderboard-step)) 0;
+  background-position: 100% 0;
 }
 
 .goat-column>h2 {
@@ -412,14 +422,16 @@ h2 {
 .leaderboard-row {
   position: relative;
   margin-bottom: 28px;
+  padding-left: 23px;
 }
  
 .league-row-heading {
   position: absolute;
   top: 50%;
-  left: -18px;
+  left: 0;
   z-index: 1;
   height: auto;
+  min-height: 0;
   margin: 0;
   color: var(--paper);
   font: 700 20px 'DM Mono', monospace;
@@ -427,10 +439,6 @@ h2 {
   text-transform: uppercase;
   writing-mode: vertical-rl;
   transform: translateY(-50%) rotate(180deg);
-}
- 
-.leaderboard-column:not(:first-child) .league-row-heading {
-  visibility: hidden;
 }
  
 .leaderboard-row:first-of-type .league-row-heading {
@@ -442,7 +450,6 @@ h2 {
 }
  
 .leaderboard-card {
-  width: 160px;
   margin-inline: auto;
   overflow: visible;
   border-radius: 0;
@@ -456,20 +463,21 @@ h2 {
   height: 91px;
 }
  
-.leaderboard-card h3 {
-  height: 34px;
-}
- 
 .leaderboard-card .card-stats {
   gap: 0;
 }
  
 .player-rail {
   display: grid;
-  grid-template-columns: repeat(10, minmax(160px, 1fr));
-  gap: 15px;
-  overflow-x: auto;
+  grid-template-columns: repeat(auto-fill, var(--player-card-width));
+  justify-content: center;
+  gap: var(--player-card-gap);
   padding: 7px 0 23px;
+}
+
+.goat-card .card-stats strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
  
 .leaderboard-track::-webkit-scrollbar {
@@ -483,8 +491,9 @@ h2 {
  
 .player-card {
   position: relative;
+  width: var(--player-card-width);
   min-height: 174px;
-  padding: 11px;
+  padding: 6px;
   overflow: hidden;
   background: linear-gradient(45deg, var(--card-bg), color-mix(in srgb, var(--card-bg) 80%, white) 60%, var(--card-bg));
   color: var(--card-ink);
@@ -626,6 +635,7 @@ h2 {
  
 .player-image>img:first-child {
   width: 94px;
+  max-width: 100%;
   height: 100%;
   display: block;
   margin: 0 auto;
@@ -636,10 +646,10 @@ h2 {
 .team-logo {
   position: absolute;
   top: 45%;
-  left: 1em;
+  left: 4px;
   z-index: 2;
-  width: 34px !important;
-  height: 34px !important;
+  width: 24px !important;
+  height: 24px !important;
   margin: 0 !important;
   object-fit: contain !important;
   transform: translateY(-50%);
@@ -652,9 +662,9 @@ h2 {
 h3 {
   position: relative;
   z-index: 1;
-  height: 34px;
+  min-height: 34px;
   margin-bottom: 2px;
-  overflow: hidden;
+  overflow-wrap: anywhere;
   color: var(--card-ink);
   font-size: 17px;
   font-weight: 700;
@@ -667,28 +677,32 @@ h3 {
   z-index: 1;
   display: flex;
   align-items: center;
-  height: 14px;
+  min-height: 14px;
   margin-bottom: 8px;
-  overflow: hidden;
+  overflow-wrap: anywhere;
   color: var(--card-ink);
   font-size: 13px;
   font-weight: 600;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
  
 .card-stats {
   position: relative;
   z-index: 1;
   display: flex;
-  gap: 30px;
+  gap: 4px;
+}
+
+.card-stats > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
  
 .card-stats span {
   display: block;
   margin-bottom: 4px;
   color: var(--card-ink);
-  font-size: 8px;
+  font-size: 7.5px;
+  letter-spacing: 0;
   font-weight: 700;
 }
  

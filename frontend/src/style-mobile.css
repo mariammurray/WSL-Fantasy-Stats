@@ -53,8 +53,9 @@
   .player-rail {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: calc((100% - 15px) / 2.15);
-    gap: 15px;
+    grid-auto-columns: var(--player-card-width);
+    justify-content: normal;
+    gap: var(--player-card-gap);
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -80,6 +81,10 @@
     touch-action: auto;
     padding-block: 0;
   }
+
+  .goat-track {
+    display: block;
+  }
  
   .leaderboard-section {
     padding-block: 2em;
@@ -89,10 +94,11 @@
     flex-direction: column-reverse;
     align-items: stretch;
     gap: 16px;
-    width: 100%;
+    width: var(--content-width);
   }
 
   .position-leaderboard-layout .leaderboard-track {
+    flex: 0 1 auto;
     width: 100%;
   }
 
@@ -109,6 +115,7 @@
   }
  
   .leaderboard-column {
+    display: block;
     width: 100%;
   }
  
@@ -151,7 +158,7 @@
  
   .leaderboard-cards {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(var(--player-card-width), 1fr));
     column-gap: 16px;
   }
  
@@ -160,6 +167,7 @@
     flex-direction: column;
     align-items: center;
     margin-bottom: 0;
+    padding-left: 0;
   }
  
   .league-row-heading {
@@ -182,13 +190,8 @@
     color: var(--orange);
   }
  
-  .leaderboard-column:not(:first-child) .league-row-heading {
-    visibility: visible;
-  }
- 
   .leaderboard-card {
-    width: 160px;
-    max-width: 160px;
+    max-width: 100%;
   }
  
   .leaderboard-card .player-image {

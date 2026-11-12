@@ -359,7 +359,7 @@ onMounted(waitForFonts)
       </section>
 
       <section v-if="activeView === 'all'" class="leaderboard-section">
-        <div class="leaderboard-track">
+        <div class="leaderboard-track goat-track" role="region" tabindex="0" aria-label="Player leaderboard">
           <div class="leaderboard-grid">
           <div v-for="category in leaderboardRows" :key="category.key" class="leaderboard-column">
             <h2>{{ category.label }}</h2>
@@ -390,7 +390,8 @@ onMounted(waitForFonts)
               </div>
             </div>
           </div>
-            <div v-if="goat" class="leaderboard-column goat-column">
+          </div>
+          <div v-if="goat" class="leaderboard-column goat-column">
             <h2>GOAT</h2>
             <article
               class="player-card leaderboard-card goat-card league-wsl"
@@ -420,7 +421,6 @@ onMounted(waitForFonts)
                 <strong>9999999999999999999999999</strong>
               </div>
             </article>
-            </div>
           </div>
         </div>
       </section>
